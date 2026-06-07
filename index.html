@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Red Fox Platformer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -28,11 +28,15 @@
             border-radius: 8px;
             overflow: hidden;
             background-color: #5C94FC; /* Classic sky blue */
+            max-width: 100vw;
+            max-height: 100vh;
         }
 
         canvas {
             display: block;
             image-rendering: pixelated; /* Keeps pixel art crisp */
+            max-width: 100%;
+            height: auto;
         }
 
         #ui-layer {
@@ -85,6 +89,52 @@
         .hidden {
             display: none !important;
         }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            pointer-events: none; /* Let touches pass through the container */
+            z-index: 50;
+        }
+
+        @media (min-width: 800px) {
+            #mobile-controls {
+                display: none; /* Hide on large screens */
+            }
+        }
+
+        #dpad { display: flex; gap: 15px; }
+        
+        .control-btn {
+            pointer-events: auto; /* Re-enable pointer events for buttons */
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            font-size: 24px;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+            user-select: none;
+            margin-top: 0;
+            padding: 0;
+            font-family: sans-serif;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .control-btn:active {
+            background: rgba(255, 255, 255, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -101,6 +151,17 @@
             </div>
             <div class="hud-text" style="position: absolute; top: 15px; right: 20px;">
                 WORLD<br>1-1
+            </div>
+
+            <!-- Mobile Controls -->
+            <div id="mobile-controls">
+                <div id="dpad">
+                    <div id="btn-left" class="control-btn">◀</div>
+                    <div id="btn-right" class="control-btn">▶</div>
+                </div>
+                <div id="action-pad">
+                    <div id="btn-jump" class="control-btn">▲</div>
+                </div>
             </div>
         </div>
 
@@ -148,6 +209,34 @@
                 player.jumpCut(); // Short hop if button released early
             }
         });
+
+        // Mobile Touch Controls
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnJump = document.getElementById('btn-jump');
+
+        const setupTouch = (el, keyName, isJump = false) => {
+            const press = (e) => {
+                e.preventDefault();
+                if (isJump && !keys.jump && gameState === 'PLAYING') player.jump();
+                keys[keyName] = true;
+            };
+            const release = (e) => {
+                e.preventDefault();
+                keys[keyName] = false;
+                if (isJump) player.jumpCut();
+            };
+            
+            el.addEventListener('touchstart', press, {passive: false});
+            el.addEventListener('touchend', release, {passive: false});
+            el.addEventListener('mousedown', press);
+            el.addEventListener('mouseup', release);
+            el.addEventListener('mouseleave', release);
+        };
+
+        setupTouch(btnLeft, 'left');
+        setupTouch(btnRight, 'right');
+        setupTouch(btnJump, 'jump', true);
 
         // We are no longer loading an external image
         // The fox will be drawn procedurally in the Player.draw() method
